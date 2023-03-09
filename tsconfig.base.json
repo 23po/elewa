@@ -154,6 +154,7 @@
         "libs/functions/bot-process-handler/src/index.ts"
       ],
       "@app/functions/bot-users": ["libs/functions/bot-users/src/index.ts"],
+      "@app/modals": ["libs/modals/src/index.ts"],
       "@app/model/bot/blocks/default-block": [
         "libs/model/bot/blocks/default-block/src/index.ts"
       ],
