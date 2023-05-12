@@ -153,7 +153,8 @@
     },
     "TOP-BAR": {
       "SAVE-STORY": "Save",
-      "PUBLISH-STORY": "Publish Story"
+      "PUBLISH-STORY": "Publish Story",
+      "UPDATE-CHANNEL-DETAILS": "Update Channel Details"
     },
     "CHANNEL": {
       "ADD-CHANNEL": {

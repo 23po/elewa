@@ -16,6 +16,7 @@ import { PlatformType } from './platform-types.enum';
  */
 export interface CommunicationChannel extends IObject
 {
+
   /** Id of the channel. Often, this reuses the unique ID also set by the third-party provider for this channel. */
   id?: string;
   /** User-defined name for the channel. Defaults to @type {PlatformType}. */

@@ -1,21 +1,20 @@
 /**
  * Different platforms supported by the system.
- * 
- * A platform is third-party API which allows us to receive and send different types of messages 
+ *
+ * A platform is third-party API which allows us to receive and send different types of messages
  *    to an identefiable end user.
- * 
- * A platform usually has a different procedure to connect it, 
+ *
+ * A platform usually has a different procedure to connect it,
  *    the incoming and outgoing data formats are often different AND
  *    the endpoints we use to register channels are specific to the platform.
- * 
- * The @enum {PlatformType} holds an overview of all the platforms we support. 
+ *
+ * The @enum {PlatformType} holds an overview of all the platforms we support.
  */
-export enum PlatformType 
-{
+export enum PlatformType {
   /** WhatsApp Business API */
-  WhatsApp  =  'whatsapp',
+  WhatsApp = 'whatsapp',
   /** Telegram API */
-  Telegram  =  'telegram',
+  Telegram = 'telegram',
 }
 
 /**

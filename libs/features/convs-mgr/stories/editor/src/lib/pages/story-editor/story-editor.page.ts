@@ -5,7 +5,7 @@ import { ComponentPortal, TemplatePortal } from '@angular/cdk/portal';
 import { FormControl, FormGroup } from '@angular/forms';
 
 import { SubSink } from 'subsink';
-import { BehaviorSubject, filter, Observable } from 'rxjs';
+import { BehaviorSubject, filter, map, Observable, of, switchMap } from 'rxjs';
 
 import { BrowserJsPlumbInstance, newInstance } from '@jsplumb/browser-ui';
 
@@ -20,6 +20,10 @@ import { StoryEditorFrame } from '../../model/story-editor-frame.model';
 import { AddBotToChannelModal } from '../../modals/add-bot-to-channel-modal/add-bot-to-channel.modal';
 
 import { getActiveBlock } from '../../providers/fetch-active-block-component.function';
+import { ManageChannelStoryLinkService } from '../../providers/manage-channel-story-link.service';
+import { CommunicationChannel } from '/home/calvin/moringathings/development/code/phase6/elewa/libs/model/convs-mgr/conversations/admin/system/src/index';
+import { ActiveStoryStore } from '@app/state/convs-mgr/stories';
+
 
 @Component({
   selector: 'convl-story-editor-page',
@@ -27,7 +31,7 @@ import { getActiveBlock } from '../../providers/fetch-active-block-component.fun
   styleUrls: ['./story-editor.page.scss']
 })
 export class StoryEditorPageComponent implements OnInit, OnDestroy {
-  private _sb = new SubSink();
+  private _sbs = new SubSink();
   portal$: Observable<TemplatePortal>;
   activeComponent: ComponentPortal<any>
   activeBlockForm: FormGroup
@@ -37,6 +41,8 @@ export class StoryEditorPageComponent implements OnInit, OnDestroy {
 
   pageName: string;
 
+  currentChannel: CommunicationChannel;
+
   state: StoryEditorState;
   breadcrumbs: Breadcrumb[] = [];
 
@@ -44,6 +50,8 @@ export class StoryEditorPageComponent implements OnInit, OnDestroy {
   frame: StoryEditorFrame;
 
   stateSaved: boolean = true;
+
+  isPublished: boolean
 
   //TODO @CHESA LInk boolean to existence of story in DB
   storyHasBeenSaved: boolean = false;
@@ -53,7 +61,13 @@ export class StoryEditorPageComponent implements OnInit, OnDestroy {
   frameZoom = 1;
   frameZoomInstance: BrowserJsPlumbInstance;
 
+  activeStoryName: string 
+  activeStory: any;
+ 
+
   constructor(private _editorStateService: StoryEditorStateService,
+              private _activeStoryStore$$: ActiveStoryStore,
+              private _manageStoryLinkService: ManageChannelStoryLinkService,
               private _dialog: MatDialog,
               private _cd: ChangeDetectorRef,
               private _logger: Logger,
@@ -71,22 +85,61 @@ export class StoryEditorPageComponent implements OnInit, OnDestroy {
         const story = state.story;
         this.breadcrumbs = [HOME_CRUMB(_router), STORY_EDITOR_CRUMB(_router, story.id, story.name, true)];
         this.loading.next(false);
+        console.log(this.currentChannel)
       }
       );
-  }
+
+       
+}
+
 
   ngOnInit() {
-    this._sb.sink = this._blockPortalService.portal$.subscribe((blockDetails) => {
+    this._sbs.sink = this._blockPortalService.portal$.subscribe((blockDetails) => {
       if (blockDetails.form) {
         const comp = getActiveBlock(blockDetails.form.value.type);
         this.activeBlockForm = blockDetails.form
         this.activeBlockTitle = blockDetails.title
         this.activeComponent = new ComponentPortal(comp);
         this.opened = true;
+        console.log(this.currentChannel)
+        
       }
     });
+
+    this._sbs.sink = this._activeStoryStore$$.get().subscribe(data => {
+      this.activeStoryName = data.name;
+      console.log(this.activeStoryName);
+    
+      // subscribe to the getChannelByName observable here
+      this._sbs.sink = this._manageStoryLinkService.getChannelByName(this.activeStoryName).pipe(
+        map(channel => {
+          console.log(channel);
+          if (channel) {
+          this._manageStoryLinkService.setCurrentChannel(channel)
+          console.log(channel)
+          this.storyHasBeenSaved = true
+          }
+          else {
+           // subscribe to changes in channelToSubmit in the service
+           const defaultChannel = this._manageStoryLinkService.getDefaultChannel()
+           console.log(defaultChannel)
+           this._manageStoryLinkService.setCurrentChannel(defaultChannel);
+          }
+          this.isPublished = !!channel;   
+        })
+      ).subscribe();
+    });
+    console.log(this.currentChannel)
+
   }
 
+
+
+
+
+private _storyExistsInChannel(channel: CommunicationChannel) {
+  return this._manageStoryLinkService.getSingleStoryInChannel(channel).pipe(map(channels => !!channels.length));
+}
   /**
   * Called when the portal component is rendered. Passes formGroup as an input to newly rendered Block Component
   * @param ref represents a component created by a Component factory.
@@ -107,7 +160,7 @@ export class StoryEditorPageComponent implements OnInit, OnDestroy {
     this.frame = frame;
 
     // After both frame AND data are loaded (hence the subscribe), draw frame blocks on the frame.
-    this._sb.sink =
+    this._sbs.sink =
       this.loading.pipe(filter(loading => !loading))
         .subscribe(() => {
           this.frame.init(this.state);
@@ -176,6 +229,9 @@ this.zoom(this.frameZoom)
   }
 
   addToChannel() {
+    if (this.storyHasBeenSaved){
+    this.save()
+    }
     this._dialog.open(AddBotToChannelModal, {
       width: '550px'
     })
@@ -184,6 +240,6 @@ this.zoom(this.frameZoom)
 
   ngOnDestroy() {
     this._editorStateService.flush();
-    this._sb.unsubscribe();
+    this._sbs.unsubscribe();
   }
 }
